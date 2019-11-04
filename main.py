@@ -119,8 +119,8 @@ for node in nodes:
     metrics['partition']['cpu_total']['ALL'] += node_data['cpus']
     metrics['partition']['cpu_usage']['ALL'] += node_data['alloc_cpus']
 
-    metrics['partition']['mem_total']['ALL'] += node_data['real_memory']
-    metrics['partition']['mem_usage']['ALL'] += node_data['alloc_mem']
+    metrics['partition']['mem_total']['ALL'] += node_data['real_memory'] * 1048576
+    metrics['partition']['mem_usage']['ALL'] += node_data['alloc_mem'] * 1048576
 
     gpu_total = 0
     gpu_usage = 0
@@ -145,8 +145,8 @@ for node in nodes:
         metrics['partition']['cpu_total'][part] += node_data['cpus']
         metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
 
-        metrics['partition']['mem_total'][part] += node_data['real_memory']
-        metrics['partition']['mem_usage'][part] += node_data['alloc_mem']
+        metrics['partition']['mem_total'][part] += node_data['real_memory'] * 1048576
+        metrics['partition']['mem_usage'][part] += node_data['alloc_mem'] * 1048576
 
         metrics['partition']['gpu_total'][part] += gpu_total
         metrics['partition']['gpu_usage'][part] += gpu_usage
