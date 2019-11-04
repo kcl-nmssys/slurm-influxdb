@@ -159,8 +159,6 @@ for job in jobs:
     if job['user_id'] not in user_ids:
         user = pwd.getpwuid(job['user_id'])[0]
         user_ids[job['user_id']] = user
-
-    if user not in metrics['user']:
         metrics['user']['cpu_usage'][user] = 0
         metrics['user']['gpu_usage'][user] = 0
         metrics['user']['mem_usage'][user] = 0
