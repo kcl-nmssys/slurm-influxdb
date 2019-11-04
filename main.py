@@ -177,6 +177,7 @@ for job in jobs:
         mem = float(tres_alloc.group(2))
         if tres_alloc.group(3) == 'G':
             mem *= 1024
+        mem *= 1048576
         mem = int(mem)
 
         gpu = 0
