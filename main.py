@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Get various Slurm part_metrics and feed them into an InfluxDB time-series database
+# Get various Slurm metrics['partition'] and feed them into an InfluxDB time-series database
 # Xand Meaden, King's College London
 
 import datetime
@@ -41,35 +41,36 @@ partitions = pyslurm.partition().get()
 
 node_partitions = {}
 
-part_metrics = {}
-part_metrics['cpu_total'] = {}
-part_metrics['cpu_usage'] = {}
-part_metrics['gpu_total'] = {}
-part_metrics['gpu_usage'] = {}
-part_metrics['mem_total'] = {}
-part_metrics['mem_usage'] = {}
-part_metrics['jobs_running'] = {}
-part_metrics['jobs_pending'] = {}
-part_metrics['queue_time'] = {}
-part_metrics['queue_jobs'] = {}
+metrics = {}
+metrics['partition'] = {}
+metrics['partition']['cpu_total'] = {}
+metrics['partition']['cpu_usage'] = {}
+metrics['partition']['gpu_total'] = {}
+metrics['partition']['gpu_usage'] = {}
+metrics['partition']['mem_total'] = {}
+metrics['partition']['mem_usage'] = {}
+metrics['partition']['jobs_running'] = {}
+metrics['partition']['jobs_pending'] = {}
+metrics['partition']['queue_time'] = {}
+metrics['partition']['queue_jobs'] = {}
 
-user_metrics = {}
-user_metrics['cpu_usage'] = {}
-user_metrics['gpu_usage'] = {}
-user_metrics['mem_usage'] = {}
-user_metrics['jobs_running'] = {}
-user_metrics['jobs_pending'] = {}
-user_metrics['queue_time'] = {}
-user_metrics['queue_jobs'] = {}
+metrics['user'] = {}
+metrics['user']['cpu_usage'] = {}
+metrics['user']['gpu_usage'] = {}
+metrics['user']['mem_usage'] = {}
+metrics['user']['jobs_running'] = {}
+metrics['user']['jobs_pending'] = {}
+metrics['user']['queue_time'] = {}
+metrics['user']['queue_jobs'] = {}
 
-group_metrics = {}
-group_metrics['cpu_usage'] = {}
-group_metrics['gpu_usage'] = {}
-group_metrics['mem_usage'] = {}
-group_metrics['jobs_running'] = {}
-group_metrics['jobs_pending'] = {}
-group_metrics['queue_time'] = {}
-group_metrics['queue_jobs'] = {}
+metrics['group'] = {}
+metrics['group']['cpu_usage'] = {}
+metrics['group']['gpu_usage'] = {}
+metrics['group']['mem_usage'] = {}
+metrics['group']['jobs_running'] = {}
+metrics['group']['jobs_pending'] = {}
+metrics['group']['queue_time'] = {}
+metrics['group']['queue_jobs'] = {}
 
 user_ids = {}
 user_groups = {}
@@ -84,25 +85,25 @@ for part in partitions.keys() + ['ALL']:
                 node_partitions[node] = []
             node_partitions[node].append(part)
 
-    part_metrics['cpu_total'][part] = 0
-    part_metrics['cpu_usage'][part] = 0
-    part_metrics['gpu_total'][part] = 0
-    part_metrics['gpu_usage'][part] = 0
-    part_metrics['mem_total'][part] = 0
-    part_metrics['mem_usage'][part] = 0
-    part_metrics['jobs_running'][part] = 0
-    part_metrics['jobs_pending'][part] = 0
-    part_metrics['queue_time'][part] = 0
-    part_metrics['queue_jobs'][part] = 0
+    metrics['partition']['cpu_total'][part] = 0
+    metrics['partition']['cpu_usage'][part] = 0
+    metrics['partition']['gpu_total'][part] = 0
+    metrics['partition']['gpu_usage'][part] = 0
+    metrics['partition']['mem_total'][part] = 0
+    metrics['partition']['mem_usage'][part] = 0
+    metrics['partition']['jobs_running'][part] = 0
+    metrics['partition']['jobs_pending'][part] = 0
+    metrics['partition']['queue_time'][part] = 0
+    metrics['partition']['queue_jobs'][part] = 0
 
 for group in groups:
-    group_metrics['cpu_usage'][group] = 0
-    group_metrics['gpu_usage'][group] = 0
-    group_metrics['mem_usage'][group] = 0
-    group_metrics['jobs_running'][group] = 0
-    group_metrics['jobs_pending'][group] = 0
-    group_metrics['queue_time'][group] = 0
-    group_metrics['queue_jobs'][group] = 0
+    metrics['group']['cpu_usage'][group] = 0
+    metrics['group']['gpu_usage'][group] = 0
+    metrics['group']['mem_usage'][group] = 0
+    metrics['group']['jobs_running'][group] = 0
+    metrics['group']['jobs_pending'][group] = 0
+    metrics['group']['queue_time'][group] = 0
+    metrics['group']['queue_jobs'][group] = 0
 
     members = grp.getgrnam(group)[3]
     for user in members:
@@ -115,11 +116,11 @@ nodes = pyslurmnode.get()
 for node in nodes:
     node_data = nodes.get(node)
 
-    part_metrics['cpu_total']['ALL'] += node_data['cpus']
-    part_metrics['cpu_usage']['ALL'] += node_data['alloc_cpus']
+    metrics['partition']['cpu_total']['ALL'] += node_data['cpus']
+    metrics['partition']['cpu_usage']['ALL'] += node_data['alloc_cpus']
 
-    part_metrics['mem_total']['ALL'] += node_data['real_memory']
-    part_metrics['mem_usage']['ALL'] += node_data['alloc_mem']
+    metrics['partition']['mem_total']['ALL'] += node_data['real_memory']
+    metrics['partition']['mem_usage']['ALL'] += node_data['alloc_mem']
 
     gpu_total = 0
     gpu_usage = 0
@@ -137,18 +138,18 @@ for node in nodes:
                 if is_gpu:
                     gpu_usage = int(is_gpu.group(1))
 
-    part_metrics['gpu_total']['ALL'] += gpu_total
-    part_metrics['gpu_usage']['ALL'] += gpu_usage
+    metrics['partition']['gpu_total']['ALL'] += gpu_total
+    metrics['partition']['gpu_usage']['ALL'] += gpu_usage
 
     for part in node_partitions[node]:
-        part_metrics['cpu_total'][part] += node_data['cpus']
-        part_metrics['cpu_usage'][part] += node_data['alloc_cpus']
+        metrics['partition']['cpu_total'][part] += node_data['cpus']
+        metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
 
-        part_metrics['mem_total'][part] += node_data['real_memory']
-        part_metrics['mem_usage'][part] += node_data['alloc_mem']
+        metrics['partition']['mem_total'][part] += node_data['real_memory']
+        metrics['partition']['mem_usage'][part] += node_data['alloc_mem']
 
-        part_metrics['gpu_total'][part] += gpu_total
-        part_metrics['gpu_usage'][part] += gpu_usage
+        metrics['partition']['gpu_total'][part] += gpu_total
+        metrics['partition']['gpu_usage'][part] += gpu_usage
 
 # Now go through the jobs list to see user-specific stuff
 jobs = pyslurm.job().get()
@@ -159,18 +160,18 @@ for job in jobs:
         user = pwd.getpwuid(job['user_id'])[0]
         user_ids[job['user_id']] = user
 
-    if user not in user_metrics:
-        user_metrics['cpu_usage'][user] = 0
-        user_metrics['gpu_usage'][user] = 0
-        user_metrics['mem_usage'][user] = 0
-        user_metrics['jobs_running'][user] = 0
-        user_metrics['jobs_pending'][user] = 0
-        user_metrics['queue_time'][user] = 0
-        user_metrics['queue_jobs'][user] = 0
+    if user not in metrics['user']:
+        metrics['user']['cpu_usage'][user] = 0
+        metrics['user']['gpu_usage'][user] = 0
+        metrics['user']['mem_usage'][user] = 0
+        metrics['user']['jobs_running'][user] = 0
+        metrics['user']['jobs_pending'][user] = 0
+        metrics['user']['queue_time'][user] = 0
+        metrics['user']['queue_jobs'][user] = 0
 
     if job['job_state'] == 'RUNNING':
-        part_metrics['jobs_running']['ALL'] += 1
-        part_metrics['jobs_running'][job['partition']] += 1
+        metrics['partition']['jobs_running']['ALL'] += 1
+        metrics['partition']['jobs_running'][job['partition']] += 1
 
         # This seems the only way to get a job's memory allocation, I think...
         tres_alloc = re.match(r'^cpu=([0-9]+),mem=([0-9.]+)(M|G),', job['tres_alloc_str'])
@@ -186,60 +187,42 @@ for job in jobs:
             if tres_per_node:
                 gpu = int(tres_per_node.group(1)) * job['num_nodes']
 
-        user_metrics['jobs_running'][user] += 1
-        user_metrics['cpu_usage'][user] += cpu
-        user_metrics['gpu_usage'][user] += gpu
-        user_metrics['mem_usage'][user] += mem
+        metrics['user']['jobs_running'][user] += 1
+        metrics['user']['cpu_usage'][user] += cpu
+        metrics['user']['gpu_usage'][user] += gpu
+        metrics['user']['mem_usage'][user] += mem
 
         queue_time = job['start_time'] - job['submit_time']
-        user_metrics['queue_jobs'][user] += 1
-        user_metrics['queue_time'][user] = (user_metrics['queue_time'][user] + queue_time) / user_metrics['queue_jobs'][user]
-        part_metrics['queue_jobs']['ALL'] += 1
-        part_metrics['queue_time']['ALL'] = (part_metrics['queue_time']['ALL'] + queue_time) / part_metrics['queue_jobs']['ALL']
-        part_metrics['queue_jobs'][job['partition']] += 1
-        part_metrics['queue_time'][job['partition']] = (part_metrics['queue_time'][job['partition']] + queue_time) / part_metrics['queue_jobs'][job['partition']]
+        metrics['user']['queue_jobs'][user] += 1
+        metrics['user']['queue_time'][user] = (metrics['user']['queue_time'][user] + queue_time) / metrics['user']['queue_jobs'][user]
+        metrics['partition']['queue_jobs']['ALL'] += 1
+        metrics['partition']['queue_time']['ALL'] = (metrics['partition']['queue_time']['ALL'] + queue_time) / metrics['partition']['queue_jobs']['ALL']
+        metrics['partition']['queue_jobs'][job['partition']] += 1
+        metrics['partition']['queue_time'][job['partition']] = (metrics['partition']['queue_time'][job['partition']] + queue_time) / metrics['partition']['queue_jobs'][job['partition']]
 
         if user in user_groups:
             for group in user_groups[user]:
-                group_metrics['jobs_running'][group] += 1
-                group_metrics['cpu_usage'][group] += cpu
-                group_metrics['gpu_usage'][group] += gpu
-                group_metrics['mem_usage'][group] += mem
-                group_metrics['queue_jobs'][group] += 1
-                group_metrics['queue_time'][group] = (group_metrics['queue_time'][group] + queue_time) / group_metrics['queue_jobs'][group]
+                metrics['group']['jobs_running'][group] += 1
+                metrics['group']['cpu_usage'][group] += cpu
+                metrics['group']['gpu_usage'][group] += gpu
+                metrics['group']['mem_usage'][group] += mem
+                metrics['group']['queue_jobs'][group] += 1
+                metrics['group']['queue_time'][group] = (metrics['group']['queue_time'][group] + queue_time) / metrics['group']['queue_jobs'][group]
 
     elif job['job_state'] == 'PENDING':
-        part_metrics['jobs_pending']['ALL'] += 1
-        part_metrics['jobs_pending'][job['partition']] += 1
+        metrics['partition']['jobs_pending']['ALL'] += 1
+        metrics['partition']['jobs_pending'][job['partition']] += 1
 
-        user_metrics['jobs_pending'][user] += 1
+        metrics['user']['jobs_pending'][user] += 1
 
         if user in user_groups:
             for group in user_groups[user]:
-                group_metrics['jobs_pending'][group] += 1
+                metrics['group']['jobs_pending'][group] += 1
 
-payload = [
-    {'measurement': 'partition_cpu_total', 'time': now, 'fields': part_metrics['cpu_total']},
-    {'measurement': 'partition_cpu_usage', 'time': now, 'fields': part_metrics['cpu_usage']},
-    {'measurement': 'partition_gpu_total', 'time': now, 'fields': part_metrics['gpu_total']},
-    {'measurement': 'partition_gpu_usage', 'time': now, 'fields': part_metrics['gpu_usage']},
-    {'measurement': 'partition_mem_total', 'time': now, 'fields': part_metrics['mem_total']},
-    {'measurement': 'partition_mem_usage', 'time': now, 'fields': part_metrics['mem_usage']},
-    {'measurement': 'partition_jobs_running', 'time': now, 'fields': part_metrics['jobs_running']},
-    {'measurement': 'partition_jobs_pending', 'time': now, 'fields': part_metrics['jobs_pending']},
-    {'measurement': 'partition_queue_time', 'time': now, 'fields': part_metrics['queue_time']},
-    {'measurement': 'group_cpu_usage', 'time': now, 'fields': group_metrics['cpu_usage']},
-    {'measurement': 'group_gpu_usage', 'time': now, 'fields': group_metrics['gpu_usage']},
-    {'measurement': 'group_mem_usage', 'time': now, 'fields': group_metrics['mem_usage']},
-    {'measurement': 'group_jobs_running', 'time': now, 'fields': group_metrics['jobs_running']},
-    {'measurement': 'group_jobs_pending', 'time': now, 'fields': group_metrics['jobs_pending']},
-    {'measurement': 'group_queue_time', 'time': now, 'fields': group_metrics['queue_time']},
-    {'measurement': 'user_cpu_usage', 'time': now, 'fields': user_metrics['cpu_usage']},
-    {'measurement': 'user_gpu_usage', 'time': now, 'fields': user_metrics['gpu_usage']},
-    {'measurement': 'user_mem_usage', 'time': now, 'fields': user_metrics['mem_usage']},
-    {'measurement': 'user_jobs_running', 'time': now, 'fields': user_metrics['jobs_running']},
-    {'measurement': 'user_jobs_pending', 'time': now, 'fields': user_metrics['jobs_pending']},
-    {'measurement': 'user_queue_time', 'time': now, 'fields': user_metrics['queue_time']},
-]
+payload = []
+for grouping in ['partition', 'user', 'group']:
+    for reading in ['cpu_total', 'cpu_usage', 'gpu_total', 'gpu_usage', 'mem_total', 'mem_usage', 'jobs_running', 'jobs_pending', 'queue_time']:
+        if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
+            payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': metrics[grouping][reading]})
 
 client.write_points(payload)
