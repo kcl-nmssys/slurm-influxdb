@@ -218,8 +218,7 @@ for job in jobs:
             for group in user_groups[user]:
                 group_metrics['jobs_pending'][group] += 1
 
-payload = []
-payload.extend([
+payload = [
     {'measurement': 'partition_cpu_total', 'time': now, 'fields': part_metrics['cpu_total']},
     {'measurement': 'partition_cpu_usage', 'time': now, 'fields': part_metrics['cpu_usage']},
     {'measurement': 'partition_gpu_total', 'time': now, 'fields': part_metrics['gpu_total']},
@@ -241,6 +240,6 @@ payload.extend([
     {'measurement': 'user_jobs_running', 'time': now, 'fields': user_metrics['jobs_running']},
     {'measurement': 'user_jobs_pending', 'time': now, 'fields': user_metrics['jobs_pending']},
     {'measurement': 'user_queue_time', 'time': now, 'fields': user_metrics['queue_time']},
-])
+]
 
-print(payload)
+client.write_points(payload)
