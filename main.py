@@ -24,7 +24,7 @@ except:
     sys.exit(1)
 
 try:
-    client = influxdb.InfluxDBClient(host=config['influxdb_host'], port=config['influxdb_post'], username=config['influxdb_username'], password=config['influxdb_password'], ssl=config['influxdb_ssl'])
+    client = influxdb.InfluxDBClient(host=config['influxdb_host'], port=config['influxdb_port'], username=config['influxdb_username'], password=config['influxdb_password'], ssl=config['influxdb_ssl'])
     client.switch_database(config['influxdb_database'])
 except:
     sys.stderr.write('Failed to connect to InfluxDB\n')

@@ -2,7 +2,7 @@
 
 # InfluxDB settings
 influxdb_host: influxdb.example.com
-influxdb_post: 8086
+influxdb_port: 8086
 influxdb_ssl: true
 influxdb_database: database
 influxdb_username: username
