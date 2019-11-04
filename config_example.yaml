@@ -1,0 +1,15 @@
+# Configuration for Slurm -> InfluxDB stats collection
+
+# InfluxDB settings
+influxdb_host: influxdb.example.com
+influxdb_post: 8086
+influxdb_ssl: true
+influxdb_database: database
+influxdb_username: username
+influxdb_password: password
+
+# User groups to collect stats for
+groups:
+  - physics
+  - maths
+  - geography
