@@ -87,10 +87,13 @@ for part in partitions.keys() + ['ALL']:
 
     metrics['partition']['cpu_total'][part] = 0
     metrics['partition']['cpu_usage'][part] = 0
+    metrics['partition']['cpu_usage_pc'][part] = 0
     metrics['partition']['gpu_total'][part] = 0
     metrics['partition']['gpu_usage'][part] = 0
+    metrics['partition']['gpu_usage_pc'][part] = 0
     metrics['partition']['mem_total'][part] = 0
     metrics['partition']['mem_usage'][part] = 0
+    metrics['partition']['mem_usage_pc'][part] = 0
     metrics['partition']['jobs_running'][part] = 0
     metrics['partition']['jobs_pending'][part] = 0
     metrics['partition']['queue_time'][part] = 0
@@ -118,9 +121,11 @@ for node in nodes:
 
     metrics['partition']['cpu_total']['ALL'] += node_data['cpus']
     metrics['partition']['cpu_usage']['ALL'] += node_data['alloc_cpus']
+    metrics['partition']['cpu_usage_pc']['ALL'] = 100 * (metrics['partition']['cpu_usage']['ALL'] / metrics['partition']['cpu_total']['ALL'])
 
     metrics['partition']['mem_total']['ALL'] += node_data['real_memory'] * 1048576
     metrics['partition']['mem_usage']['ALL'] += node_data['alloc_mem'] * 1048576
+    metrics['partition']['mem_usage_pc']['ALL'] = 100 * (metrics['partition']['mem_usage']['ALL'] / metrics['partition']['mem_total']['ALL'])
 
     gpu_total = 0
     gpu_usage = 0
@@ -140,16 +145,22 @@ for node in nodes:
 
     metrics['partition']['gpu_total']['ALL'] += gpu_total
     metrics['partition']['gpu_usage']['ALL'] += gpu_usage
+    if metrics['partition']['gpu_total']['ALL'] > 0:
+        metrics['partition']['gpu_usage_pc']['ALL'] = 100 * (metrics['partition']['gpu_usage']['ALL'] / metrics['partition']['gpu_total']['ALL'])
 
     for part in node_partitions[node]:
         metrics['partition']['cpu_total'][part] += node_data['cpus']
         metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
+        metrics['partition']['cpu_usage_pc'][part] = 100 * (metrics['partition']['cpu_usage'][part] / metrics['partition']['cpu_total'][part])
 
         metrics['partition']['mem_total'][part] += node_data['real_memory'] * 1048576
         metrics['partition']['mem_usage'][part] += node_data['alloc_mem'] * 1048576
+        metrics['partition']['mem_usage_pc'][part] = 100 * (metrics['partition']['mem_usage'][part] / metrics['partition']['mem_total'][part])
 
         metrics['partition']['gpu_total'][part] += gpu_total
         metrics['partition']['gpu_usage'][part] += gpu_usage
+        if metrics['partition']['gpu_total'][part] > 0:
+            metrics['partition']['gpu_usage_pc'][part] = 100 * (metrics['partition']['gpu_usage'][part] / metrics['partition']['gpu_total'][part])
 
 # Now go through the jobs list to see user-specific stuff
 jobs = pyslurm.job().get()
@@ -220,7 +231,7 @@ for job in jobs:
 
 payload = []
 for grouping in ['partition', 'user', 'group']:
-    for reading in ['cpu_total', 'cpu_usage', 'gpu_total', 'gpu_usage', 'mem_total', 'mem_usage', 'jobs_running', 'jobs_pending', 'queue_time']:
+    for reading in ['cpu_total', 'cpu_usage', 'cpu_usage_pc', 'gpu_total', 'gpu_usage', 'gpu_usage_pc', 'mem_total', 'mem_usage', 'mem_usage_pc', 'jobs_running', 'jobs_pending', 'queue_time']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
             for key in metrics[grouping][reading].keys():
                 payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: metrics[grouping][reading][key]}, 'tags': {grouping: key}})
