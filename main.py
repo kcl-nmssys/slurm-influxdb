@@ -124,11 +124,11 @@ for node in nodes:
 
     metrics['partition']['cpu_total']['ALL'] += node_data['cpus']
     metrics['partition']['cpu_usage']['ALL'] += node_data['alloc_cpus']
-    metrics['partition']['cpu_usage_pc']['ALL'] = 100 * (metrics['partition']['cpu_usage']['ALL'] / metrics['partition']['cpu_total']['ALL'])
+    metrics['partition']['cpu_usage_pc']['ALL'] = 100 * (float(metrics['partition']['cpu_usage']['ALL']) / float(metrics['partition']['cpu_total']['ALL']))
 
     metrics['partition']['mem_total']['ALL'] += node_data['real_memory'] * 1048576
     metrics['partition']['mem_usage']['ALL'] += node_data['alloc_mem'] * 1048576
-    metrics['partition']['mem_usage_pc']['ALL'] = 100 * (metrics['partition']['mem_usage']['ALL'] / metrics['partition']['mem_total']['ALL'])
+    metrics['partition']['mem_usage_pc']['ALL'] = 100 * (float(metrics['partition']['mem_usage']['ALL']) / float(metrics['partition']['mem_total']['ALL']))
 
     gpu_total = 0
     gpu_usage = 0
@@ -149,21 +149,21 @@ for node in nodes:
     metrics['partition']['gpu_total']['ALL'] += gpu_total
     metrics['partition']['gpu_usage']['ALL'] += gpu_usage
     if metrics['partition']['gpu_total']['ALL'] > 0:
-        metrics['partition']['gpu_usage_pc']['ALL'] = 100 * (metrics['partition']['gpu_usage']['ALL'] / metrics['partition']['gpu_total']['ALL'])
+        metrics['partition']['gpu_usage_pc']['ALL'] = 100 * (float(metrics['partition']['gpu_usage']['ALL']) / metrics['partition']['gpu_total']['ALL'])
 
     for part in node_partitions[node]:
         metrics['partition']['cpu_total'][part] += node_data['cpus']
         metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
-        metrics['partition']['cpu_usage_pc'][part] = 100 * (metrics['partition']['cpu_usage'][part] / metrics['partition']['cpu_total'][part])
+        metrics['partition']['cpu_usage_pc'][part] = 100 * (float(metrics['partition']['cpu_usage'][part]) / metrics['partition']['cpu_total'][part])
 
         metrics['partition']['mem_total'][part] += node_data['real_memory'] * 1048576
         metrics['partition']['mem_usage'][part] += node_data['alloc_mem'] * 1048576
-        metrics['partition']['mem_usage_pc'][part] = 100 * (metrics['partition']['mem_usage'][part] / metrics['partition']['mem_total'][part])
+        metrics['partition']['mem_usage_pc'][part] = 100 * (float(metrics['partition']['mem_usage'][part]) / metrics['partition']['mem_total'][part])
 
         metrics['partition']['gpu_total'][part] += gpu_total
         metrics['partition']['gpu_usage'][part] += gpu_usage
         if metrics['partition']['gpu_total'][part] > 0:
-            metrics['partition']['gpu_usage_pc'][part] = 100 * (metrics['partition']['gpu_usage'][part] / metrics['partition']['gpu_total'][part])
+            metrics['partition']['gpu_usage_pc'][part] = 100 * (float(metrics['partition']['gpu_usage'][part]) / metrics['partition']['gpu_total'][part])
 
 # Now go through the jobs list to see user-specific stuff
 jobs = pyslurm.job().get()
@@ -207,11 +207,11 @@ for job in jobs:
 
         queue_time = job['start_time'] - job['submit_time']
         metrics['user']['queue_jobs'][user] += 1
-        metrics['user']['queue_time'][user] = (metrics['user']['queue_time'][user] + queue_time) / metrics['user']['queue_jobs'][user]
+        metrics['user']['queue_time'][user] = (float(metrics['user']['queue_time'][user] + queue_time)) / metrics['user']['queue_jobs'][user]
         metrics['partition']['queue_jobs']['ALL'] += 1
-        metrics['partition']['queue_time']['ALL'] = (metrics['partition']['queue_time']['ALL'] + queue_time) / metrics['partition']['queue_jobs']['ALL']
+        metrics['partition']['queue_time']['ALL'] = (float(metrics['partition']['queue_time']['ALL'] + queue_time)) / metrics['partition']['queue_jobs']['ALL']
         metrics['partition']['queue_jobs'][job['partition']] += 1
-        metrics['partition']['queue_time'][job['partition']] = (metrics['partition']['queue_time'][job['partition']] + queue_time) / metrics['partition']['queue_jobs'][job['partition']]
+        metrics['partition']['queue_time'][job['partition']] = (float(metrics['partition']['queue_time'][job['partition']] + queue_time)) / metrics['partition']['queue_jobs'][job['partition']]
 
         if user in user_groups:
             for group in user_groups[user]:
@@ -220,7 +220,7 @@ for job in jobs:
                 metrics['group']['gpu_usage'][group] += gpu
                 metrics['group']['mem_usage'][group] += mem
                 metrics['group']['queue_jobs'][group] += 1
-                metrics['group']['queue_time'][group] = (metrics['group']['queue_time'][group] + queue_time) / metrics['group']['queue_jobs'][group]
+                metrics['group']['queue_time'][group] = (float(metrics['group']['queue_time'][group] + queue_time)) / metrics['group']['queue_jobs'][group]
 
     elif job['job_state'] == 'PENDING':
         metrics['partition']['jobs_pending']['ALL'] += 1
