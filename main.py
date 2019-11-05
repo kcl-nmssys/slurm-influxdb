@@ -237,6 +237,6 @@ for grouping in ['partition', 'user', 'group']:
     for reading in ['cpu_total', 'cpu_usage', 'cpu_usage_pc', 'gpu_total', 'gpu_usage', 'gpu_usage_pc', 'mem_total', 'mem_usage', 'mem_usage_pc', 'jobs_running', 'jobs_pending', 'queue_time']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
             for key in metrics[grouping][reading].keys():
-                payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: metrics[grouping][reading][key]}, 'tags': {grouping: key}})
+                payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
 
 client.write_points(payload)
