@@ -25,7 +25,6 @@ except:
 
 try:
     client = influxdb.InfluxDBClient(host=config['influxdb_host'], port=config['influxdb_port'], username=config['influxdb_username'], password=config['influxdb_password'], ssl=config['influxdb_ssl'], verify_ssl=config['influxdb_verify_ssl'])
-    client.switch_database(config['influxdb_database'])
 except:
     sys.stderr.write('Failed to connect to InfluxDB\n')
     sys.exit(2)
@@ -239,4 +238,4 @@ for grouping in ['partition', 'user', 'group']:
             for key in metrics[grouping][reading].keys():
                 payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
 
-client.write_points(payload)
+    client.write_points(payload, database=config['database'][grouping])
