@@ -197,7 +197,7 @@ for job in jobs:
         mem = int(mem)
 
         gpu = 0
-        if job['tres_per_node']:
+        if 'tres_per_node' in job and job['tres_per_node']:
             tres_per_node = re.match(r'gpu:([0-9]+)', job['tres_per_node'])
             if tres_per_node:
                 gpu = int(tres_per_node.group(1)) * job['num_nodes']
