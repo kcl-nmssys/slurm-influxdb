@@ -18,7 +18,7 @@ import yaml
 
 try:
     with open('config.yaml') as fh:
-        config = yaml.load(fh)
+        config = yaml.load(fh, Loader=yaml.SafeLoader)
 except:
     sys.stderr.write('Failed to load configuration\n')
     sys.exit(1)
@@ -82,7 +82,9 @@ now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 # Setup data structures, with stats set to 0
 for part in partitions.keys() + ['ALL']:
     if part != 'ALL':
-        for node in partitions[part]['nodes'].split(','):
+        hl = pyslurm.hostlist()
+        hl.create(partitions[part]['nodes'])
+        for node in hl.get_list():
             if node not in node_partitions:
                 node_partitions[node] = []
             node_partitions[node].append(part)
@@ -150,19 +152,20 @@ for node in nodes:
     if metrics['partition']['gpu_total']['ALL'] > 0:
         metrics['partition']['gpu_usage_pc']['ALL'] = 100 * (float(metrics['partition']['gpu_usage']['ALL']) / metrics['partition']['gpu_total']['ALL'])
 
-    for part in node_partitions[node]:
-        metrics['partition']['cpu_total'][part] += node_data['cpus']
-        metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
-        metrics['partition']['cpu_usage_pc'][part] = 100 * (float(metrics['partition']['cpu_usage'][part]) / metrics['partition']['cpu_total'][part])
+    if node in node_partitions:
+        for part in node_partitions[node]:
+            metrics['partition']['cpu_total'][part] += node_data['cpus']
+            metrics['partition']['cpu_usage'][part] += node_data['alloc_cpus']
+            metrics['partition']['cpu_usage_pc'][part] = 100 * (float(metrics['partition']['cpu_usage'][part]) / metrics['partition']['cpu_total'][part])
 
-        metrics['partition']['mem_total'][part] += node_data['real_memory'] * 1048576
-        metrics['partition']['mem_usage'][part] += node_data['alloc_mem'] * 1048576
-        metrics['partition']['mem_usage_pc'][part] = 100 * (float(metrics['partition']['mem_usage'][part]) / metrics['partition']['mem_total'][part])
+            metrics['partition']['mem_total'][part] += node_data['real_memory'] * 1048576
+            metrics['partition']['mem_usage'][part] += node_data['alloc_mem'] * 1048576
+            metrics['partition']['mem_usage_pc'][part] = 100 * (float(metrics['partition']['mem_usage'][part]) / metrics['partition']['mem_total'][part])
 
-        metrics['partition']['gpu_total'][part] += gpu_total
-        metrics['partition']['gpu_usage'][part] += gpu_usage
-        if metrics['partition']['gpu_total'][part] > 0:
-            metrics['partition']['gpu_usage_pc'][part] = 100 * (float(metrics['partition']['gpu_usage'][part]) / metrics['partition']['gpu_total'][part])
+            metrics['partition']['gpu_total'][part] += gpu_total
+            metrics['partition']['gpu_usage'][part] += gpu_usage
+            if metrics['partition']['gpu_total'][part] > 0:
+                metrics['partition']['gpu_usage_pc'][part] = 100 * (float(metrics['partition']['gpu_usage'][part]) / metrics['partition']['gpu_total'][part])
 
 # Now go through the jobs list to see user-specific stuff
 jobs = pyslurm.job().get()
