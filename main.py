@@ -238,4 +238,4 @@ for grouping in ['partition', 'user', 'group']:
             for key in metrics[grouping][reading].keys():
                 payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
 
-client.write_points(payload, database=config['database'])
+client.write_points(payload, database=config['influxdb_database'])
