@@ -5,13 +5,7 @@ influxdb_host: influxdb.example.com
 influxdb_port: 8086
 influxdb_ssl: true
 influxdb_verify_ssl: true
-
-# Allow different databases as InfluxDB permissions aren't great
-# This allows us to make some statistics publically visible but not others
-influxdb_database:
-  partition: hpc_partitions
-  user: hpc_users
-  group: hpc_groups
+influxdb_database: database
 influxdb_username: username
 influxdb_password: password
 
