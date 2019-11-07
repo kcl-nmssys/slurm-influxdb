@@ -9,6 +9,15 @@ influxdb_database: database
 influxdb_username: username
 influxdb_password: password
 
+# User lookup settings
+user_lookup: true
+ldap_hostname: ad.example.com
+ldap_username: username
+ldap_password: password
+ldap_userbase: OU=users,DC=example,DC=com
+ldap_username_attrib: sAMAccountName
+ldap_grouping_attrib: department
+
 # User groups to collect stats for
 groups:
   - physics

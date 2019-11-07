@@ -7,6 +7,7 @@ import datetime
 import grp
 import influxdb
 import json
+import ldap
 import pyslurm
 import pwd
 import re
@@ -34,6 +35,14 @@ try:
 except:
     sys.stderr.write('Failed to get Slurm data\n')
     sys.exit(3)
+
+if config['user_lookup']:
+    try:
+        ldap_c = ldap.initialize('ldaps://%s:636' % config['ldap_hostname'])
+        ldap_c.simple_bind_s(config['ldap_username'], config['ldap_password'])
+    except:
+        sys.stderr.write('Failed to bind to LDAP\n')
+        sys.exit(4)
 
 groups = config['groups']
 partitions = pyslurm.partition().get()
@@ -74,8 +83,19 @@ metrics['group']['jobs_pending'] = {}
 metrics['group']['queue_time'] = {}
 metrics['group']['queue_jobs'] = {}
 
+if config['user_lookup']:
+    metrics['ldap_attrib'] = {}
+    metrics['ldap_attrib']['cpu_usage'] = {}
+    metrics['ldap_attrib']['gpu_usage'] = {}
+    metrics['ldap_attrib']['mem_usage'] = {}
+    metrics['ldap_attrib']['jobs_running'] = {}
+    metrics['ldap_attrib']['jobs_pending'] = {}
+    metrics['ldap_attrib']['queue_time'] = {}
+    metrics['ldap_attrib']['queue_jobs'] = {}
+
 user_ids = {}
 user_groups = {}
+user_ldap = {}
 
 now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -183,6 +203,20 @@ for job in jobs:
         metrics['user']['queue_time'][user] = 0
         metrics['user']['queue_jobs'][user] = 0
 
+    if config['user_lookup']:
+        if user not in user_ldap:
+            result_id = ldap_c.search(config['ldap_userbase'], ldap.SCOPE_SUBTREE, '(%s=%s)' % (config['ldap_username_attrib'], user), [config['ldap_grouping_attrib']])
+            result_type, result_data = ldap_c.result(result_id, 0)
+            user_ldap[user] = result_data[0][1][config['ldap_grouping_attrib']][0]
+
+        if user_ldap[user] not in metrics['ldap_attrib']['jobs_running']:
+            metrics['ldap_attrib']['jobs_running'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['cpu_usage'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['gpu_usage'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['mem_usage'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['queue_jobs'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['queue_time'][user_ldap[user]] = 0
+
     if job['job_state'] == 'RUNNING':
         metrics['partition']['jobs_running']['ALL'] += 1
         metrics['partition']['jobs_running'][job['partition']] += 1
@@ -224,6 +258,14 @@ for job in jobs:
                 metrics['group']['queue_jobs'][group] += 1
                 metrics['group']['queue_time'][group] = (float(metrics['group']['queue_time'][group] + queue_time)) / metrics['group']['queue_jobs'][group]
 
+        if config['user_lookup']:
+            metrics['ldap_attrib']['jobs_running'][user_ldap[user]] += 1
+            metrics['ldap_attrib']['cpu_usage'][user_ldap[user]] += cpu
+            metrics['ldap_attrib']['gpu_usage'][user_ldap[user]] += gpu
+            metrics['ldap_attrib']['mem_usage'][user_ldap[user]] += mem
+            metrics['ldap_attrib']['queue_jobs'][user_ldap[user]] += 1
+            metrics['ldap_attrib']['queue_time'][user_ldap[user]] = (float(metrics['ldap_attrib']['queue_time'][user_ldap[user]] + queue_time)) / metrics['ldap_attrib']['queue_jobs'][user_ldap[user]]
+
     elif job['job_state'] == 'PENDING':
         metrics['partition']['jobs_pending']['ALL'] += 1
         for partition in job['partition'].split(','):
@@ -236,7 +278,7 @@ for job in jobs:
                 metrics['group']['jobs_pending'][group] += 1
 
 payload = []
-for grouping in ['partition', 'user', 'group']:
+for grouping in ['partition', 'user', 'group', 'ldap_attrib']:
     for reading in ['cpu_total', 'cpu_usage', 'cpu_usage_pc', 'gpu_total', 'gpu_usage', 'gpu_usage_pc', 'mem_total', 'mem_usage', 'mem_usage_pc', 'jobs_running', 'jobs_pending', 'queue_time']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
             for key in metrics[grouping][reading].keys():
