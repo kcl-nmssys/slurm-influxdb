@@ -226,7 +226,8 @@ for job in jobs:
 
     elif job['job_state'] == 'PENDING':
         metrics['partition']['jobs_pending']['ALL'] += 1
-        metrics['partition']['jobs_pending'][job['partition']] += 1
+        for partition in job['partition'].split(','):
+            metrics['partition']['jobs_pending'][partition] += 1
 
         metrics['user']['jobs_pending'][user] += 1
 
