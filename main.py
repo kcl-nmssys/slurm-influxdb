@@ -211,6 +211,7 @@ for job in jobs:
 
         if user_ldap[user] not in metrics['ldap_attrib']['jobs_running']:
             metrics['ldap_attrib']['jobs_running'][user_ldap[user]] = 0
+            metrics['ldap_attrib']['jobs_pending'][user_ldap[user]] = 0
             metrics['ldap_attrib']['cpu_usage'][user_ldap[user]] = 0
             metrics['ldap_attrib']['gpu_usage'][user_ldap[user]] = 0
             metrics['ldap_attrib']['mem_usage'][user_ldap[user]] = 0
@@ -276,6 +277,9 @@ for job in jobs:
         if user in user_groups:
             for group in user_groups[user]:
                 metrics['group']['jobs_pending'][group] += 1
+
+        if config['user_lookup']:
+            metrics['ldap_attrib']['jobs_pending'][user_ldap[user]] += 1
 
 payload = []
 for grouping in ['partition', 'user', 'group', 'ldap_attrib']:
