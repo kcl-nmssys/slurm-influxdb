@@ -157,13 +157,13 @@ for node in nodes:
         gres_total = pyslurm.node().parse_gres(node_data['gres'][0])
         gres_usage = pyslurm.node().parse_gres(node_data['gres_used'][0])
         for g in gres_total:
-            is_gpu = re.match(r'^gpu:([0-9]+)\(', g)
+            is_gpu = re.match(r'^gpu:([0-9]+)\(?', g)
             if is_gpu:
                 gpu_total = int(is_gpu.group(1))
 
         if gpu_total > 0:
             for g in gres_usage:
-                is_gpu = re.match(r'^gpu:[^:]+:([0-9]+)\(', g)
+                is_gpu = re.match(r'^gpu:(?:[^:]*:?)([0-9]+)\(?', g)
                 if is_gpu:
                     gpu_usage = int(is_gpu.group(1))
 
