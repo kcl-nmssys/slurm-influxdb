@@ -291,13 +291,14 @@ for job in jobs:
             metrics['ldap_attrib']['jobs_pending'][user_ldap[user]] += 1
 
 payload = []
-
 for grouping in ['partition', 'user', 'group', 'ldap_attrib']:
     for reading in ['cpu_total', 'cpu_usage', 'cpu_usage_pc', 'gpu_total', 'gpu_usage', 'gpu_usage_pc', 'mem_total', 'mem_usage', 'mem_usage_pc', 'jobs_running', 'jobs_pending', 'queue_time']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
             for key in metrics[grouping][reading].keys():
                 payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now_str, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
+client.write_points(payload, database=config['influxdb_database'])
 
+payload = []
 for grouping in ['partition', 'group']:
     for reading in ['jobs_time_pending']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
@@ -305,5 +306,4 @@ for grouping in ['partition', 'group']:
                 if len(metrics[grouping][reading][key]) > 0:
                     for jid in metrics[grouping][reading][key].keys():
                         payload.append({ 'measurement': '{grouping}_{reading}'.format(grouping=grouping,reading=reading), 'time': now_str, 'fields': {reading: float(metrics[grouping][reading][key][jid])}, 'tags': {'job_id': jid, grouping: key} })
-
-client.write_points(payload, database=config['influxdb_database'])
+client.write_points(payload, database=config['influxdb_database'], retention_policy='1week')
