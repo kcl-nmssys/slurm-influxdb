@@ -64,6 +64,7 @@ metrics['partition']['jobs_running'] = {}
 metrics['partition']['jobs_pending'] = {}
 metrics['partition']['queue_time'] = {}
 metrics['partition']['queue_jobs'] = {}
+metrics['partition']['jobs_time_pending'] = {}
 
 metrics['user'] = {}
 metrics['user']['cpu_usage'] = {}
@@ -82,6 +83,7 @@ metrics['group']['jobs_running'] = {}
 metrics['group']['jobs_pending'] = {}
 metrics['group']['queue_time'] = {}
 metrics['group']['queue_jobs'] = {}
+metrics['group']['jobs_time_pending'] = {}
 
 if config['user_lookup']:
     metrics['ldap_attrib'] = {}
@@ -97,7 +99,8 @@ user_ids = {}
 user_groups = {}
 user_ldap = {}
 
-now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+now = datetime.datetime.utcnow()
+now_str = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 # Setup data structures, with stats set to 0
 for part in partitions.keys() + ['ALL']:
@@ -122,6 +125,7 @@ for part in partitions.keys() + ['ALL']:
     metrics['partition']['jobs_pending'][part] = 0
     metrics['partition']['queue_time'][part] = 0
     metrics['partition']['queue_jobs'][part] = 0
+    metrics['partition']['jobs_time_pending'][part] = {}
 
 for group in groups:
     metrics['group']['cpu_usage'][group] = 0
@@ -131,6 +135,7 @@ for group in groups:
     metrics['group']['jobs_pending'][group] = 0
     metrics['group']['queue_time'][group] = 0
     metrics['group']['queue_jobs'][group] = 0
+    metrics['group']['jobs_time_pending'][group] = {}
 
     members = grp.getgrnam(group)[3]
     for user in members:
@@ -268,15 +273,19 @@ for job in jobs:
             metrics['ldap_attrib']['queue_time'][user_ldap[user]] = (float(metrics['ldap_attrib']['queue_time'][user_ldap[user]] + queue_time)) / metrics['ldap_attrib']['queue_jobs'][user_ldap[user]]
 
     elif job['job_state'] == 'PENDING':
+        time_pending = (now - datetime.datetime.utcfromtimestamp(job['submit_time'])).total_seconds()
         metrics['partition']['jobs_pending']['ALL'] += 1
+        metrics['partition']['jobs_time_pending']['ALL'][job['job_id']] = time_pending  # Not sure 'ALL' is really needed for this metric, but for consistency do it anyway
         for partition in job['partition'].split(','):
             metrics['partition']['jobs_pending'][partition] += 1
+            metrics['partition']['jobs_time_pending'][partition][job['job_id']] = time_pending
 
         metrics['user']['jobs_pending'][user] += 1
 
         if user in user_groups:
             for group in user_groups[user]:
                 metrics['group']['jobs_pending'][group] += 1
+                metrics['group']['jobs_time_pending'][group][job['job_id']] = time_pending
 
         if config['user_lookup']:
             metrics['ldap_attrib']['jobs_pending'][user_ldap[user]] += 1
@@ -286,6 +295,15 @@ for grouping in ['partition', 'user', 'group', 'ldap_attrib']:
     for reading in ['cpu_total', 'cpu_usage', 'cpu_usage_pc', 'gpu_total', 'gpu_usage', 'gpu_usage_pc', 'mem_total', 'mem_usage', 'mem_usage_pc', 'jobs_running', 'jobs_pending', 'queue_time']:
         if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
             for key in metrics[grouping][reading].keys():
-                payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
-
+                payload.append({'measurement': '%s_%s' % (grouping, reading), 'time': now_str, 'fields': {reading: float(metrics[grouping][reading][key])}, 'tags': {grouping: key}})
 client.write_points(payload, database=config['influxdb_database'])
+
+payload = []
+for grouping in ['partition', 'group']:
+    for reading in ['jobs_time_pending']:
+        if reading in metrics[grouping] and len(metrics[grouping][reading]) > 0:
+            for key in metrics[grouping][reading].keys():
+                if len(metrics[grouping][reading][key]) > 0:
+                    for jid in metrics[grouping][reading][key].keys():
+                        payload.append({ 'measurement': '{grouping}_{reading}'.format(grouping=grouping,reading=reading), 'time': now_str, 'fields': {reading: float(metrics[grouping][reading][key][jid])}, 'tags': {'job_id': jid, grouping: key} })
+client.write_points(payload, database=config['influxdb_database'], retention_policy='1week')
