@@ -223,11 +223,13 @@ for job in jobs:
         metrics['partition']['jobs_running'][job['partition']] += 1
 
         # This seems the only way to get a job's memory allocation, I think...
-        tres_alloc = re.match(r'^cpu=([0-9]+),mem=([0-9.]+)(M|G),', job['tres_alloc_str'])
+        tres_alloc = re.match(r'^cpu=([0-9]+),mem=([0-9.]+)(M|G|T),', job['tres_alloc_str'])
         cpu = int(tres_alloc.group(1))
         mem = float(tres_alloc.group(2))
         if tres_alloc.group(3) == 'G':
             mem *= 1024
+        elif tres_alloc.group(3) == 'T':
+            mem *= 1048576
         mem *= 1048576
         mem = int(mem)
 
