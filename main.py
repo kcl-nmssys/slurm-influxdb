@@ -207,7 +207,10 @@ for job in jobs:
         if user not in user_ldap:
             result_id = ldap_c.search(config['ldap_userbase'], ldap.SCOPE_SUBTREE, '(%s=%s)' % (config['ldap_username_attrib'], user), [config['ldap_grouping_attrib']])
             result_type, result_data = ldap_c.result(result_id, 0)
-            user_ldap[user] = result_data[0][1][config['ldap_grouping_attrib']][0]
+            if result_data == []:
+                user_ldap[user] = 'unknown'
+            else:
+                user_ldap[user] = result_data[0][1][config['ldap_grouping_attrib']][0]
 
         if user_ldap[user] not in metrics['ldap_attrib']['jobs_running']:
             metrics['ldap_attrib']['jobs_running'][user_ldap[user]] = 0
