@@ -202,6 +202,8 @@ for job in jobs:
         metrics['user']['jobs_pending'][user] = 0
         metrics['user']['queue_time'][user] = 0
         metrics['user']['queue_jobs'][user] = 0
+    else:
+        user = user_ids[job['user_id']]
 
     if config['user_lookup']:
         if user not in user_ldap:
