@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Get various Slurm metrics['partition'] and feed them into an InfluxDB time-series database
 # Xand Meaden, King's College London
@@ -16,6 +16,13 @@ import struct
 import sys
 import time
 import yaml
+
+def tres_to_dict(tres_csv):
+    resources = {}
+    for resource in tres_csv.split(','):
+        [k, v] = resource.split('=')
+        resources[k] = v
+    return resources
 
 try:
     with open('config.yaml') as fh:
@@ -100,7 +107,7 @@ user_ldap = {}
 now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 # Setup data structures, with stats set to 0
-for part in partitions.keys() + ['ALL']:
+for part in list(partitions.keys()) + ['ALL']:
     if part != 'ALL':
         hl = pyslurm.hostlist()
         hl.create(partitions[part]['nodes'])
@@ -227,16 +234,19 @@ for job in jobs:
         metrics['partition']['jobs_running']['ALL'] += 1
         metrics['partition']['jobs_running'][job['partition']] += 1
 
-        # This seems the only way to get a job's memory allocation, I think...
-        tres_alloc = re.match(r'^cpu=([0-9]+),mem=([0-9.]+)(M|G|T),', job['tres_alloc_str'])
-        cpu = int(tres_alloc.group(1))
-        mem = float(tres_alloc.group(2))
-        if tres_alloc.group(3) == 'G':
-            mem *= 1024
-        elif tres_alloc.group(3) == 'T':
-            mem *= 1048576
-        mem *= 1048576
-        mem = int(mem)
+        tres_alloc = tres_to_dict(job['tres_alloc_str'])
+        cpu = int(tres_alloc['cpu'])
+        mem = 0
+        if 'mem' in tres_alloc:
+            m = re.match('^[0-9]+[MGT]$', tres_alloc['mem'])
+            if m:
+                mem = float(m.group(1))
+                if tres_alloc.group(2) == 'G':
+                    mem *= 1024
+                elif tres_alloc.group(2) == 'T':
+                    mem *= 1048576
+                mem *= 1048576
+                mem = int(mem)
 
         gpu = 0
         if 'tres_per_node' in job and job['tres_per_node']:
