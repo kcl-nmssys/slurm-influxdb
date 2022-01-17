@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Get various Slurm metrics['partition'] and feed them into an InfluxDB time-series database
 # Xand Meaden, King's College London
@@ -100,7 +100,7 @@ user_ldap = {}
 now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 # Setup data structures, with stats set to 0
-for part in partitions.keys() + ['ALL']:
+for part in list(partitions.keys()) + ['ALL']:
     if part != 'ALL':
         hl = pyslurm.hostlist()
         hl.create(partitions[part]['nodes'])
